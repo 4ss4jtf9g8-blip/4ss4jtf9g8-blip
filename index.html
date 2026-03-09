@@ -1,401 +1,112 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Bot Simulator</title>
-    <!-- Правильный способ подключения Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Мой бот в Telegram</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .section {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        
-        .section-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-        
-        .code-editor {
-            background: #1e1e1e;
-            padding: 15px;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        
-        textarea {
-            width: 100%;
-            height: 400px;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            border: none;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: vertical;
-            outline: none;
-        }
-        
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 600px;
-        }
-        
-        .messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: #f5f5f5;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
         .message {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            word-wrap: break-word;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
         }
-        
         .user-message {
-            background: #007bff;
-            color: white;
+            background-color: var(--tg-theme-button-color, #40a7e3);
+            color: var(--tg-theme-button-text-color, #ffffff);
             align-self: flex-end;
-            border-bottom-right-radius: 5px;
         }
-        
         .bot-message {
-            background: white;
-            color: #333;
-            align-self: flex-start;
-            border-bottom-left-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
         }
-        
-        .input-area {
-            display: flex;
-            padding: 15px;
-            background: white;
-            border-top: 1px solid #eee;
-        }
-        
-        .input-area input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            font-size: 14px;
-            outline: none;
-        }
-        
-        .input-area button {
-            margin-left: 10px;
-            padding: 10px 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .input-area button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .input-area button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .control-panel {
-            padding: 15px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .btn {
-            padding: 10px 20px;
+        button {
+            background-color: var(--tg-theme-button-color, #40a7e3);
+            color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
             border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
+            padding: 12px 20px;
+            margin: 4px;
+            font-size: 16px;
             cursor: pointer;
-            margin-right: 10px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status.warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Левая панель - редактор -->
-        <div class="section">
-            <div class="section-header">
-                📝 Редактор Python кода
-            </div>
-            <div class="code-editor">
-                <textarea id="pythonCode" spellcheck="false"># Ваш код бота здесь
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-
-API_TOKEN = 'test_token'
-
-@dp.message(Command('start'))
-async def cmd_start(message: types.Message):
-    await message.answer('👋 Добро пожаловать!')
-
-async def main():
-    await dp.start_polling(bot)
-
-if __name__ == '__main__':
-    asyncio.run(main())</textarea>
-            </div>
-        </div>
-        
-        <!-- Правая панель - симулятор -->
-        <div class="section">
-            <div class="section-header">
-                🤖 Симулятор бота
-            </div>
-            
-            <div class="control-panel">
-                <button class="btn btn-primary" onclick="window.initBot()">🚀 Запустить бота</button>
-                <button class="btn btn-danger" onclick="window.stopBot()">⏹️ Остановить</button>
-                <button class="btn btn-primary" onclick="window.resetChat()">🔄 Очистить чат</button>
-                
-                <div id="status" class="status warning">
-                    ⚠️ Нажмите "Запустить бота" для начала
-                </div>
-            </div>
-            
-            <div class="chat-container">
-                <div class="messages" id="messages">
-                    <div class="bot-message">
-                        👋 Нажмите "Запустить бота" для начала работы
-                    </div>
-                </div>
-                
-                <div class="input-area">
-                    <input type="text" id="messageInput" placeholder="Введите сообщение..." disabled>
-                    <button onclick="window.sendMessage()" id="sendBtn" disabled>Отправить</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="chat"></div>
+    <div id="keyboard"></div>
 
     <script>
-    // Глобальные переменные
-    let pyodide = null;
-    let botRunning = false;
-    
-    // Функция добавления сообщения бота
-    function addBotMessage(text) {
-        const messagesDiv = document.getElementById('messages');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message bot-message';
-        messageDiv.textContent = text;
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-    
-    // Функция добавления сообщения пользователя
-    function addUserMessage(text) {
-        const messagesDiv = document.getElementById('messages');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message user-message';
-        messageDiv.textContent = text;
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-    
-    // Функция очистки чата
-    function resetChat() {
-        document.getElementById('messages').innerHTML = '<div class="bot-message">👋 Чат очищен</div>';
-    }
-    
-    // Функция остановки бота
-    function stopBot() {
-        botRunning = false;
-        document.getElementById('messageInput').disabled = true;
-        document.getElementById('sendBtn').disabled = true;
-        document.getElementById('status').className = 'status warning';
-        document.getElementById('status').innerHTML = '⚠️ Бот остановлен';
-        addBotMessage('🤖 Бот остановлен');
-    }
-    
-    // Функция отправки сообщения
-    async function sendMessage() {
-        if (!botRunning) {
-            alert('Сначала запустите бота!');
-            return;
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Разворачиваем на весь экран
+
+        // Простой симулятор бота
+        const chat = document.getElementById('chat');
+        const keyboard = document.getElementById('keyboard');
+
+        function addMessage(text, isUser = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            msgDiv.textContent = text;
+            chat.appendChild(msgDiv);
+            chat.scrollTop = chat.scrollHeight;
         }
-        
-        const input = document.getElementById('messageInput');
-        const text = input.value.trim();
-        
-        if (!text) return;
-        
-        addUserMessage(text);
-        input.value = '';
-        
-        // Простые ответы для теста
-        setTimeout(() => {
-            if (text === '/start') {
-                addBotMessage('👋 Добро пожаловать!\n\nВыберите банк:\n🏦 Альфа-Банк\n🏦 Озон Банк\n🏦 ВТБ');
-            } else if (text === '🏦 Альфа-Банк') {
-                addBotMessage('🏦 Альфа-Банк\n\nВыберите продукт:\n💰 Счет для инвестиций\n📊 Счет ИП\n💳 Кредитная карта');
-            } else if (text === '🏦 Озон Банк') {
-                addBotMessage('🏦 Озон Банк\n\nВыберите продукт:\n🎁 Подписка Озон премиум\n💳 Кредитная карта');
-            } else if (text === '🏦 ВТБ') {
-                addBotMessage('🏦 ВТБ\n\nВыберите продукт:\n💳 Кредитная карта\n💳 Дебетовая карта');
-            } else {
-                addBotMessage(`Вы написали: ${text}\nИспользуйте кнопки меню для навигации.`);
-            }
-        }, 500);
-    }
-    
-    // Функция запуска бота
-    async function initBot() {
-        const statusEl = document.getElementById('status');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        
-        statusEl.className = 'status warning';
-        statusEl.innerHTML = '<span class="loading"></span> Загрузка...';
-        
-        try {
-            // Проверяем, загружен ли Pyodide
-            if (typeof loadPyodide === 'undefined') {
-                throw new Error('Pyodide не загрузился. Проверьте интернет-соединение.');
-            }
-            
-            // Загружаем Pyodide если нужно
-            if (!pyodide) {
-                statusEl.innerHTML = '<span class="loading"></span> Загрузка Python...';
-                pyodide = await loadPyodide({
-                    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
-                });
-                console.log('Pyodide загружен');
-            }
-            
-            // Тестовый запуск Python
-            await pyodide.runPythonAsync('print("Python работает!")');
-            
-            botRunning = true;
-            messageInput.disabled = false;
-            sendBtn.disabled = false;
-            
-            statusEl.className = 'status success';
-            statusEl.innerHTML = '✅ Бот запущен! Отправьте /start';
-            
-            addBotMessage('🤖 Бот готов к работе! Отправьте /start');
-            
-        } catch (error) {
-            console.error('Ошибка:', error);
-            statusEl.className = 'status error';
-            statusEl.innerHTML = `❌ Ошибка: ${error.message}. Используется тестовый режим.`;
-            
-            // Включаем тестовый режим без Pyodide
-            botRunning = true;
-            messageInput.disabled = false;
-            sendBtn.disabled = false;
-            
-            addBotMessage('⚠️ Работаю в тестовом режиме (без Python)');
+
+        function showMainMenu() {
+            keyboard.innerHTML = '';
+            const banks = ['🏦 Альфа-Банк', '🏦 Озон Банк', '🏦 ВТБ', '🆘 Поддержка'];
+            banks.forEach(bank => {
+                const btn = document.createElement('button');
+                btn.textContent = bank;
+                btn.onclick = () => handleBankClick(bank);
+                keyboard.appendChild(btn);
+            });
         }
-    }
-    
-    // Делаем функции глобальными
-    window.initBot = initBot;
-    window.stopBot = stopBot;
-    window.sendMessage = sendMessage;
-    window.resetChat = resetChat;
-    
-    // Проверяем загрузку Pyodide
-    console.log('Страница загружена');
+
+        function handleBankClick(bank) {
+            addMessage(bank, true);
+            
+            if (bank === '🏦 Альфа-Банк') {
+                addMessage('🏦 Альфа-Банк\n\nВыберите продукт:');
+                showAlfaMenu();
+            } else if (bank === '🆘 Поддержка') {
+                addMessage('🆘 Служба поддержки\n\nСвяжитесь с нами: @support');
+            }
+        }
+
+        function showAlfaMenu() {
+            keyboard.innerHTML = '';
+            const products = ['💰 Счет для инвестиций', '📊 Счет ИП', '💳 Кредитная карта', '🔙 Назад'];
+            products.forEach(product => {
+                const btn = document.createElement('button');
+                btn.textContent = product;
+                btn.onclick = () => {
+                    addMessage(product, true);
+                    if (product === '🔙 Назад') {
+                        showMainMenu();
+                    } else {
+                        addMessage(`Открываю страницу: ${product}`);
+                    }
+                };
+                keyboard.appendChild(btn);
+            });
+        }
+
+        // Стартовое сообщение
+        addMessage('👋 Добро пожаловать! Выберите банк:');
+        showMainMenu();
+
+        // Отправляем данные в Telegram о готовности
+        tg.sendData(JSON.stringify({ action: 'start' }));
     </script>
 </body>
 </html>
